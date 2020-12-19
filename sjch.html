@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>随机抽号</title>
+	<style>
+	::-webkit-scrollbar{
+		display:none;
+	}
+	</style>
+</head>
+<body style="margin:0;">
+	<form id="号数输入" style="display:none;">
+		<input id="号数输入_输入" min="1" max="99" type="number" placeholder="输入号数"/>
+		<input id="号数输入_确定" type="submit" value="确定"/>
+	</form>
+		<p id="号数显示" style="cursor:default;margin:0;text-align:center;line-height:100vh;height:100vh;font-size:70vmin"></p>
+	<p id="抽取列表_p"></p>
+	<input id="删除号码" type="button" value="删除该号码"/><br/>
+	抽中后删除该号码<input type="checkbox" id="抽中删除"/><br/>
+	自动继续<input type="checkbox" id="自动继续_启用框"/><input type="number" placeholder="间隔时间(单位:秒)" id="自动继续_输入"/><br/>
+	<input id="重置" type="button" value="重置"/>&emsp;暗色调<input type="checkbox" id="暗色调"/>
+	<script>
+初始=false;
+自动继续_计时=null;
+已删除号码=null;
+if(window.localStorage&&(抽取列表_=localStorage.getItem("抽号_号数"))){
+	try{
+	抽取列表=JSON.parse(抽取列表_);
+	}catch(e){
+		初始=true;
+	}
+}else{
+	初始=true;
+}
+
+号数显示=document.getElementById("号数显示");
+抽取=()=>{
+	window.getSelection?window.getSelection().removeAllRanges():document.selection.empty();
+	结果_=Math.floor(Math.random()*抽取列表.length);
+	号数显示.innerText=抽取列表[结果_];
+}
+
+document.getElementById("自动继续_启用框").onclick=function(){
+	if(document.getElementById("自动继续_启用框").checked){
+		if(document.getElementById("自动继续_输入").value==""){
+			document.getElementById("自动继续_输入").value="5"
+		}
+		document.getElementById("自动继续_输入").readOnly=true;
+		document.getElementById("自动继续_输入").disabled=true;
+	}else{
+		document.getElementById("自动继续_输入").readOnly=false;
+		document.getElementById("自动继续_输入").disabled=false;
+	}
+};
+
+document.getElementById("暗色调").onclick=function(){
+	if(document.getElementById("暗色调").checked){
+		号数显示.style.color="#fff";
+		号数显示.style.backgroundColor="#000";
+	}else{
+		号数显示.style.color="";
+		号数显示.style.backgroundColor="";
+	}
+};
+
+删除抽中号码=()=>{
+	抽取列表.splice(结果_,1);
+	已删除号码=true;
+	document.getElementById("删除号码").onclick=null;
+	document.getElementById("删除号码").disabled=true;
+	document.getElementById("抽取列表_p").innerHTML=抽取列表.join(' ');
+};
+
+抽取_结束=()=>{
+	clearInterval(抽取_进行);
+	保存();
+	setTimeout(()=>{
+		if(document.getElementById("抽中删除").checked){
+			删除抽中号码();
+		}else{
+			document.getElementById("删除号码").onclick=删除抽中号码;
+			document.getElementById("删除号码").disabled=false;
+		}
+		document.getElementById("抽取列表_p").innerHTML=抽取列表.join(' ');
+		if(抽取列表.length>0){
+			号数显示.onclick=抽取_开始;
+			if(document.getElementById("自动继续_启用框").checked){
+				自动继续_计时=setTimeout(抽取_开始,parseFloat(document.getElementById("自动继续_输入").value)*1000);
+			}
+		}else{
+			号数显示.innerHTML="";
+		}
+	},50);
+};
+抽取_开始=()=>{
+	clearTimeout(自动继续_计时);
+	抽取_进行=setInterval(抽取,20);
+	已删除号码=false;
+	document.getElementById("删除号码").onclick=null;
+	document.getElementById("删除号码").disabled=true;
+	保存();
+	document.getElementById("抽取列表_p").innerHTML=抽取列表.join(' ');
+	号数显示.onclick=抽取_结束;
+};
+保存=()=>{
+	if(window.localStorage){
+		localStorage.setItem("抽号_号数",JSON.stringify(抽取列表));
+	}
+}
+document.getElementById("重置").onclick=()=>{
+	clearInterval(抽取_进行);
+	号数显示.onclick=null;
+	localStorage.removeItem("抽号_号数");
+	document.getElementById("抽取列表_p").innerHTML="";
+	号数显示.innerHTML="";
+	初始=true;
+	加载();
+}
+加载=()=>{
+	if(初始){
+		抽取列表=[];
+		document.getElementById("号数输入").onsubmit=()=>{
+			for(let i=0;i<parseInt(document.getElementById("号数输入_输入").value);i++){
+				抽取列表[i]=i+1;
+			};
+			document.getElementById("号数输入").style.display="none";
+			document.getElementById("号数输入_确定").onclick=null;
+			抽取_开始();
+			return false;
+		};
+		document.getElementById("号数输入").style.display="";
+	}else{
+		抽取_开始();
+	}
+}
+加载();
+//while(Math.floor(Math.random()*抽取列表.length+1)!=0);
+//alert(1)
+	</script>
+</body>
+</html>
